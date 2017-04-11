@@ -72,25 +72,33 @@ int main (int argc, char** argv)
 
     flv_write_header (out,has_audio,has_video);
 
-    while (flv_read_tag (flv,&tag)) {
-        // TODO handle B frames better
+    fprintf (stderr,"HERE %d\n",__LINE__);
 
-        if (flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag)) {
-            timestamp = flvtag_pts_seconds (&tag);
+    while (0 < flv_read_tag (flv,&tag)) {
+        // fprintf (stderr,"HERE %d %d %d\n",__LINE__,tag.used, flvtag_size (&tag));
 
-            if (srt && srt->timestamp <= timestamp) {
-                fprintf (stderr,"T: %0.02f (%0.02fs):\n%s\n", srt->timestamp, srt->duration, srt_data (srt));
-                clear_timestamp = srt->timestamp + srt->duration;
-                flvtag_addcaption_text (&tag, srt_data (srt));
-                srt = srt->next;
-            } else if (0 <= clear_timestamp && clear_timestamp <= timestamp) {
-                fprintf (stderr, "T: %0.02f: [CAPTIONS CLEARED]\n", timestamp);
-                flvtag_addcaption_text (&tag, NULL);
-                clear_timestamp = -1;
+        if (flvtag_ready (&tag)) {
+            // fprintf (stderr,"FLVTAG ready\n");
+
+            // TODO handle B frames better
+            if (flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag)) {
+                timestamp = flvtag_pts_seconds (&tag);
+
+                if (srt && srt->timestamp <= timestamp) {
+                    fprintf (stderr,"T: %0.02f (%0.02fs):\n%s\n", srt->timestamp, srt->duration, srt_data (srt));
+                    clear_timestamp = srt->timestamp + srt->duration;
+                    flvtag_addcaption_text (&tag, srt_data (srt));
+                    srt = srt->next;
+                } else if (0 <= clear_timestamp && clear_timestamp <= timestamp) {
+                    fprintf (stderr, "T: %0.02f: [CAPTIONS CLEARED]\n", timestamp);
+                    flvtag_addcaption_text (&tag, NULL);
+                    clear_timestamp = -1;
+                }
             }
-        }
 
-        flv_write_tag (out,&tag);
+            flv_write_tag (out,&tag);
+            flvtag_reset (&tag);
+        }
     }
 
     srt_free (head);

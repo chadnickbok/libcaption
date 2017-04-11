@@ -39,9 +39,14 @@ void flvtag_free (flvtag_t* tag)
     flvtag_init (tag);
 }
 
+#define FLVTAG_MINALOC (512*1024)
 int flvtag_reserve (flvtag_t* tag, uint32_t size)
 {
-    size += FLV_TAG_HEADER_SIZE + FLV_TAG_FOOTER_SIZE;
+    size += FLVTAG_HEADER_SIZE + FLVTAG_FOOTER_SIZE;
+
+    if (size<FLVTAG_MINALOC) {
+        size = FLVTAG_MINALOC;
+    }
 
     if (size > tag->aloc) {
         tag->data = realloc (tag->data,size);
@@ -77,10 +82,16 @@ FILE* flv_close (FILE* flv)
 
 int flv_read_header (FILE* flv, int* has_audio, int* has_video)
 {
+    size_t bytes;
+    uint32_t size = FLV_HEADER_SIZE;
     uint8_t h[FLV_HEADER_SIZE];
 
-    if (FLV_HEADER_SIZE != fread (&h[0],1,FLV_HEADER_SIZE,flv)) {
-        return 0;
+    while (size) {
+        if (0 < (bytes = fread (&h[FLV_HEADER_SIZE-size],1,size,flv))) {
+            size -= bytes;
+        } else {
+            return 0;
+        }
     }
 
     if ('F' != h[0] || 'L' != h[1] || 'V' != h[2]) {
@@ -100,20 +111,32 @@ int flv_write_header (FILE* flv, int has_audio, int has_video)
 
 int flv_read_tag (FILE* flv, flvtag_t* tag)
 {
-    uint32_t size;
-    uint8_t h[FLV_TAG_HEADER_SIZE];
+    size_t bytes, size = FLVTAG_HEADER_SIZE;
 
-    if (FLV_TAG_HEADER_SIZE != fread (&h[0],1,FLV_TAG_HEADER_SIZE,flv)) {
-        return 0;
+    // if we have a complete tag, start a new one
+    if (flvtag_ready (tag)) {
+        tag->used = 0;
     }
 
-    size = ( (h[1]<<16) | (h[2]<<8) |h[3]);
-    flvtag_reserve (tag, size);
-    // copy header to buffer
-    memcpy (tag->data,&h[0],FLV_TAG_HEADER_SIZE);
+    flvtag_reserve (tag, FLVTAG_HEADER_SIZE+FLVTAG_HEADER_SIZE);
 
-    if (size+FLV_TAG_FOOTER_SIZE != fread (&tag->data[FLV_TAG_HEADER_SIZE],1,size+FLV_TAG_FOOTER_SIZE,flv)) {
-        return 0;
+    while (size > tag->used) {
+        if (0 < (bytes = fread (tag->data + tag->used,1,size - tag->used,flv))) {
+            tag->used += bytes;
+        } else {
+            return bytes;
+        }
+    }
+
+    size = FLVTAG_HEADER_SIZE + flvtag_size (tag) + FLVTAG_FOOTER_SIZE;
+    flvtag_reserve (tag, size);
+
+    while (size > tag->used) {
+        if (0 < (bytes = fread (tag->data + tag->used,1,size - tag->used,flv))) {
+            tag->used += bytes;
+        } else {
+            return bytes;
+        }
     }
 
     return 1;
@@ -121,34 +144,45 @@ int flv_read_tag (FILE* flv, flvtag_t* tag)
 
 int flv_write_tag (FILE* flv, flvtag_t* tag)
 {
-    size_t size = flvtag_raw_size (tag);
-    return size == fwrite (flvtag_raw_data (tag),1,size,flv);
+    size_t size = flvtag_size (tag)+FLVTAG_HEADER_SIZE+FLVTAG_FOOTER_SIZE;
+    return size == fwrite (tag->data,1,size,flv);
 }
 ////////////////////////////////////////////////////////////////////////////////
 size_t flvtag_header_size (flvtag_t* tag)
 {
     switch (flvtag_type (tag)) {
     case flvtag_type_audio:
-        return FLV_TAG_HEADER_SIZE + (flvtag_soundformat_aac != flvtag_soundformat (tag) ? 1 : 2);
+        return FLVTAG_HEADER_SIZE + (flvtag_soundformat_aac != flvtag_soundformat (tag) ? 1 : 2);
 
     case flvtag_type_video:
         // CommandFrame does not have a compositionTime
-        return FLV_TAG_HEADER_SIZE + (flvtag_codecid_avc != flvtag_codecid (tag) ? 1 : (flvtag_frametype_commandframe != flvtag_frametype (tag) ? 5 : 2));
+        return FLVTAG_HEADER_SIZE + (flvtag_codecid_avc != flvtag_codecid (tag) ? 1 : (flvtag_frametype_commandframe != flvtag_frametype (tag) ? 5 : 2));
 
     default:
-        return FLV_TAG_HEADER_SIZE;
+        return FLVTAG_HEADER_SIZE;
     }
 }
 
 size_t flvtag_payload_size (flvtag_t* tag)
 {
-    return FLV_TAG_HEADER_SIZE + flvtag_size (tag) - flvtag_header_size (tag);
+    return FLVTAG_HEADER_SIZE + flvtag_size (tag) - flvtag_header_size (tag);
 }
 
 uint8_t* flvtag_payload_data (flvtag_t* tag)
 {
     size_t payload_offset = flvtag_header_size (tag);
     return &tag->data[payload_offset];
+}
+////////////////////////////////////////////////////////////////////////////////
+int64_t flvtag_timestamp_delta (int64_t timestamp, int64_t previous)
+{
+    int64_t delta = timestamp - previous;
+
+    if (0xFFFFFFFF <= -delta) {
+        delta = (0xFFFFFFFF - previous) + timestamp;
+    }
+
+    return delta;
 }
 ////////////////////////////////////////////////////////////////////////////////
 int flvtag_updatesize (flvtag_t* tag, uint32_t size)
@@ -164,11 +198,10 @@ int flvtag_updatesize (flvtag_t* tag, uint32_t size)
     return 1;
 }
 
-#define FLVTAG_PREALOC 2048
 int flvtag_initavc (flvtag_t* tag, uint32_t dts, int32_t cts, flvtag_frametype_t type)
 {
     flvtag_init (tag);
-    flvtag_reserve (tag,5+FLVTAG_PREALOC);
+    flvtag_reserve (tag,5);
     tag->data[0] = flvtag_type_video;
     tag->data[4] = dts>>16;
     tag->data[5] = dts>>8;
@@ -190,7 +223,7 @@ int flvtag_initavc (flvtag_t* tag, uint32_t dts, int32_t cts, flvtag_frametype_t
 int flvtag_initamf (flvtag_t* tag, uint32_t dts)
 {
     flvtag_init (tag);
-    flvtag_reserve (tag,FLVTAG_PREALOC);
+    flvtag_reserve (tag,0);
     tag->data[0] = flvtag_type_scriptdata;
     tag->data[4] = dts>>16;
     tag->data[5] = dts>>8;
@@ -312,7 +345,7 @@ int flvtag_avcwritenal (flvtag_t* tag, uint8_t* data, size_t size)
 {
     uint32_t flvsize = flvtag_size (tag);
     flvtag_reserve (tag,flvsize+LENGTH_SIZE+size);
-    uint8_t* payload = tag->data + FLV_TAG_HEADER_SIZE + flvsize;
+    uint8_t* payload = tag->data + FLVTAG_HEADER_SIZE + flvsize;
     payload[0] = size>>24; // nalu size
     payload[1] = size>>16;
     payload[2] = size>>8;

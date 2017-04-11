@@ -27,15 +27,16 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <inttypes.h>
-#define FLV_HEADER_SIZE     13
-#define FLV_FOOTER_SIZE      4
-#define FLV_TAG_HEADER_SIZE 11
-#define FLV_TAG_FOOTER_SIZE  4
+#define FLV_HEADER_SIZE 13
+#define FLV_FOOTER_SIZE 4
+#define FLVTAG_HEADER_SIZE 11
+#define FLVTAG_FOOTER_SIZE 4
 ////////////////////////////////////////////////////////////////////////////////
 #include "avc.h"
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct {
     uint8_t* data;
+    size_t   used;
     size_t   aloc;
 } flvtag_t;
 
@@ -104,6 +105,8 @@ typedef enum {
 static inline flvtag_avcpackettype_t flvtag_avcpackettype (flvtag_t* tag) { return (flvtag_codecid_avc!=flvtag_codecid (tag)) ?flvtag_avcpackettype_unknown:tag->data[12]; }
 ////////////////////////////////////////////////////////////////////////////////
 static inline size_t   flvtag_size (flvtag_t* tag) { return (tag->data[1]<<16) | (tag->data[2]<<8) | tag->data[3]; }
+static inline int      flvtag_ready (flvtag_t* tag) { return (tag->used >= FLVTAG_HEADER_SIZE) && (tag->used >= flvtag_size (tag)+FLVTAG_HEADER_SIZE+FLVTAG_FOOTER_SIZE) ? 1 : 0; }
+static inline void     flvtag_reset (flvtag_t* tag) { tag->used = 0; }
 static inline uint32_t flvtag_timestamp (flvtag_t* tag) { return (tag->data[7]<<24) | (tag->data[4]<<16) | (tag->data[5]<<8) | tag->data[6]; }
 static inline uint32_t flvtag_dts (flvtag_t* tag) { return flvtag_timestamp (tag); }
 static inline uint32_t flvtag_cts (flvtag_t* tag) { return (flvtag_avcpackettype_nalu!=flvtag_avcpackettype (tag)) ?0: (tag->data[13]<<16) | (tag->data[14]<<8) |tag->data[15]; }
@@ -112,6 +115,9 @@ static inline double flvtag_dts_seconds (flvtag_t* tag) { return flvtag_dts (tag
 static inline double flvtag_cts_seconds (flvtag_t* tag) { return flvtag_cts (tag) / 1000.0; }
 static inline double flvtag_pts_seconds (flvtag_t* tag) { return flvtag_pts (tag) / 1000.0; }
 ////////////////////////////////////////////////////////////////////////////////
+// For timestamp rollover handeling
+int64_t flvtag_timestamp_delta (int64_t timestamp, int64_t previous);
+////////////////////////////////////////////////////////////////////////////////
 size_t flvtag_header_size (flvtag_t* tag);
 size_t flvtag_payload_size (flvtag_t* tag);
 uint8_t* flvtag_payload_data (flvtag_t* tag);
@@ -119,9 +125,6 @@ uint8_t* flvtag_payload_data (flvtag_t* tag);
 FILE* flv_open_read (const char* flv);
 FILE* flv_open_write (const char* flv);
 FILE* flv_close (FILE* flv);
-////////////////////////////////////////////////////////////////////////////////
-static inline const uint8_t* flvtag_raw_data (flvtag_t* tag) { return tag->data; }
-static inline const size_t flvtag_raw_size (flvtag_t* tag) { return flvtag_size (tag)+FLV_TAG_HEADER_SIZE+FLV_TAG_FOOTER_SIZE; }
 ////////////////////////////////////////////////////////////////////////////////
 int flv_read_tag (FILE* flv, flvtag_t* tag);
 int flv_write_tag (FILE* flv, flvtag_t* tag);
