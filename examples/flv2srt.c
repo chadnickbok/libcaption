@@ -47,7 +47,7 @@ int main (int argc, char** argv)
         fprintf (stderr,"Reading from '%s'\n", path);
     }
 
-    while (flv_read_tag (flv,&tag)) {
+    while (flvtag_read (flv,&tag)) {
         if (flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag)) {
             ssize_t  size = flvtag_payload_size (&tag);
             uint8_t* data = flvtag_payload_data (&tag);

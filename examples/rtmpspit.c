@@ -132,7 +132,7 @@ int main (int argc, const char** argv)
         return EXIT_FAILURE;
     }
 
-    while (flv_read_tag (flv,&tag)) {
+    while (flvtag_read (flv,&tag)) {
         if (! RTMP_IsConnected (rtmp) || RTMP_IsTimedout (rtmp)) {
             fprintf (stderr,"RTMP_IsConnected() Error\n");
             return EXIT_FAILURE;

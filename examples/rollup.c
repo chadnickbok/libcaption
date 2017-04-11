@@ -80,7 +80,7 @@ int main (int argc, char** argv)
 
     flv_write_header (out,has_audio,has_video);
 
-    while (flv_read_tag (flv,&tag)) {
+    while (flvtag_read (flv,&tag)) {
         if (head && flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag) && head->timestamp <= flvtag_pts_seconds (&tag)) {
             fprintf (stderr,"%f %s\n", flvtag_pts_seconds (&tag), srt_data (head));
             flvtag_addcaption_text (&tag, srt_data (head));
@@ -88,7 +88,7 @@ int main (int argc, char** argv)
         }
 
 
-        flv_write_tag (out,&tag);
+        flvtag_write (out,&tag);
     }
 
     return EXIT_SUCCESS;

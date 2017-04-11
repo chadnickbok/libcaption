@@ -126,8 +126,8 @@ FILE* flv_open_read (const char* flv);
 FILE* flv_open_write (const char* flv);
 FILE* flv_close (FILE* flv);
 ////////////////////////////////////////////////////////////////////////////////
-int flv_read_tag (FILE* flv, flvtag_t* tag);
-int flv_write_tag (FILE* flv, flvtag_t* tag);
+int flvtag_read (FILE* flv, flvtag_t* tag);
+int flvtag_write (FILE* flv, flvtag_t* tag);
 int flv_read_header (FILE* flv, int* has_audio, int* has_video);
 int flv_write_header (FILE* flv, int has_audio, int has_video);
 ////////////////////////////////////////////////////////////////////////////////

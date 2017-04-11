@@ -109,7 +109,7 @@ int flv_write_header (FILE* flv, int has_audio, int has_video)
     return FLV_HEADER_SIZE == fwrite (&h[0],1,FLV_HEADER_SIZE,flv);
 }
 
-int flv_read_tag (FILE* flv, flvtag_t* tag)
+int flvtag_read (FILE* flv, flvtag_t* tag)
 {
     size_t bytes, size = FLVTAG_HEADER_SIZE;
 
@@ -142,7 +142,7 @@ int flv_read_tag (FILE* flv, flvtag_t* tag)
     return 1;
 }
 
-int flv_write_tag (FILE* flv, flvtag_t* tag)
+int flvtag_write (FILE* flv, flvtag_t* tag)
 {
     size_t size = flvtag_size (tag)+FLVTAG_HEADER_SIZE+FLVTAG_FOOTER_SIZE;
     return size == fwrite (tag->data,1,size,flv);

@@ -74,7 +74,7 @@ int main (int argc, char** argv)
 
     fprintf (stderr,"HERE %d\n",__LINE__);
 
-    while (0 < flv_read_tag (flv,&tag)) {
+    while (0 < flvtag_read (flv,&tag)) {
         // fprintf (stderr,"HERE %d %d %d\n",__LINE__,tag.used, flvtag_size (&tag));
 
         if (flvtag_ready (&tag)) {
@@ -96,7 +96,7 @@ int main (int argc, char** argv)
                 }
             }
 
-            flv_write_tag (out,&tag);
+            flvtag_write (out,&tag);
             flvtag_reset (&tag);
         }
     }

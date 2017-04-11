@@ -49,7 +49,7 @@ int main (int argc, char** argv)
     // read the first scc
     scc_data += scc_to_608 (&scc,scc_data);
 
-    while (flv_read_tag (flv,&tag)) {
+    while (flvtag_read (flv,&tag)) {
         double timestamp = flvtag_pts_seconds (&tag);
 
         if (scc && scc->cc_size && scc->timestamp < timestamp && flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag)) {
@@ -59,7 +59,7 @@ int main (int argc, char** argv)
             scc_data += scc_to_608 (&scc,scc_data);
         }
 
-        flv_write_tag (out,&tag);
+        flvtag_write (out,&tag);
     }
 
     free (scc_data_ptr);

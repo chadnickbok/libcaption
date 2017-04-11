@@ -59,7 +59,7 @@ void write_amfcaptions_708 (FILE* out, uint32_t timestamp, const char* text)
 
     for (msg = sei_message_head (&sei); msg; msg=sei_message_next (msg),++timestamp) {
         flvtag_amfcaption_708 (&tag,timestamp,msg);
-        flv_write_tag (out,&tag);
+        flvtag_write (out,&tag);
     }
 
     sei_free (&sei);
@@ -72,7 +72,7 @@ void write_amfcaptions_utf8 (FILE* out, uint32_t timestamp, const utf8_char_t* t
     flvtag_t tag;
     flvtag_init (&tag);
     flvtag_amfcaption_utf8 (&tag,timestamp,text);
-    flv_write_tag (out,&tag);
+    flvtag_write (out,&tag);
     flvtag_free (&tag);
 }
 
@@ -94,7 +94,7 @@ int main (int argc, char** argv)
 
     flv_write_header (out,has_audio,has_video);
 
-    while (flv_read_tag (flv,&tag)) {
+    while (flvtag_read (flv,&tag)) {
 
         if (flvtag_avcpackettype_nalu == flvtag_avcpackettype (&tag) && nextParty <= flvtag_timestamp (&tag)) {
             get_dudes (partyDudes);
@@ -115,7 +115,7 @@ int main (int argc, char** argv)
             nextParty += 500; // party all the time
         }
 
-        flv_write_tag (out,&tag);
+        flvtag_write (out,&tag);
     }
 
     return EXIT_SUCCESS;
