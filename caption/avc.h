@@ -50,7 +50,6 @@ static inline uint8_t h264_type(h26x_t* nalu) { return nalu->data[0] & 0x1F; }
 static inline uint8_t* h26x_data(h26x_t* nalu) { return &nalu->data[0]; }
 static inline size_t h26x_size(h26x_t* nalu) { return nalu->size; }
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 typedef struct _sei_message_t sei_message_t;
 
 typedef enum {
@@ -107,8 +106,10 @@ int sei_parse_nalu(sei_t* sei, const uint8_t* data, size_t size, double dts, dou
 /*! \brief
     \param
 */
-// TODO add dts,cts to nalu
-static inline int sei_parse_avcnalu(sei_t* sei, h26x_t* nalu, double dts, double cts) { return sei_parse_nalu(sei, h26x_data(nalu), h26x_size(nalu), dts, cts); }
+static inline int sei_parse_avcnalu(sei_t* sei, h26x_t* nalu, double dts, double cts)
+{
+    return sei_parse_nalu(sei, h26x_data(nalu), h26x_size(nalu), dts, cts);
+}
 /*! \brief
     \param
 */
