@@ -26,9 +26,10 @@
 #include "caption.h"
 typedef struct {
     int16_t pmtpid;
-    int16_t avcpid;
+    int16_t videopid;
     int64_t pts;
     int64_t dts;
+    uint8_t type;
     size_t  size;
     const uint8_t* data;
 } ts_t;
@@ -39,6 +40,9 @@ typedef struct {
     Expects 188 byte TS packet
 */
 #define TS_PACKET_SIZE 188
+#define STREAM_TYPE_H264 0x1B
+#define STREAM_TYPE_H262 0x00 // TODO!
+
 void ts_init (ts_t* ts);
 int ts_parse_packet (ts_t* ts, const uint8_t* data);
 // return timestamp in seconds

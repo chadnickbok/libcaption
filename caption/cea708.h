@@ -96,7 +96,12 @@ int cea708_init (cea708_t* cea708); // will confgure using HLS compatiable defau
 /*! \brief
     \param
 */
-int cea708_parse (uint8_t* data, size_t size, cea708_t* cea708);
+int cea708_parse_h262 (uint8_t* data, size_t size, cea708_t* cea708);
+int cea708_parse_h264 (uint8_t* data, size_t size, cea708_t* cea708);
+static inline int cea708_parse (uint8_t* data, size_t size, cea708_t* cea708)
+{
+    return cea708_parse_h264 (data,size,cea708);
+}
 /*! \brief
     \param
 */

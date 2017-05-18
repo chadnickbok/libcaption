@@ -38,16 +38,20 @@ static size_t _find_emulation_prevention_byte (const uint8_t* data, size_t size)
         if (0 == data[offset]) {
             // 0 0 X 3 //; we know X is zero
             offset += 1;
-        } else if (3 != data[offset]) {
+        }
+        else if (3 != data[offset]) {
             // 0 0 X 0 0 3; we know X is not 0 and not 3
             offset += 3;
-        } else if (0 != data[offset-1]) {
+        }
+        else if (0 != data[offset-1]) {
             // 0 X 0 0 3
             offset += 2;
-        } else if (0 != data[offset-2]) {
+        }
+        else if (0 != data[offset-2]) {
             // X 0 0 3
             offset += 1;
-        } else {
+        }
+        else {
             // 0 0 3
             return offset;
         }
@@ -94,13 +98,16 @@ static inline size_t _find_emulated (uint8_t* data, size_t size)
         if (3 < data[offset]) {
             // 0 0 X; we know X is not 0, 1, 2 or 3
             offset += 3;
-        } else if (0 != data[offset-1]) {
+        }
+        else if (0 != data[offset-1]) {
             // 0 X 0 0 1
             offset += 2;
-        } else if (0 != data[offset-2]) {
+        }
+        else if (0 != data[offset-2]) {
             // X 0 0 1
             offset += 1;
-        } else {
+        }
+        else {
             // 0 0 0, 0 0 1
             return offset;
         }
@@ -153,7 +160,8 @@ sei_message_t* sei_message_new (sei_msgtype_t type, uint8_t* data, size_t size)
 
     if (data) {
         memcpy (sei_message_data (msg), data, size);
-    } else {
+    }
+    else {
         memset (sei_message_data (msg), 0, size);
     }
 
@@ -173,7 +181,8 @@ void sei_message_append (sei_t* sei, sei_message_t* msg)
     if (0 == sei->head) {
         sei->head = msg;
         sei->tail = msg;
-    } else {
+    }
+    else {
         sei->tail->next = msg;
         sei->tail = msg;
     }
@@ -219,7 +228,8 @@ void sei_dump_messages (sei_message_t* head)
         if (sei_type_user_data_registered_itu_t_t35 == sei_message_type (msg)) {
             if (LIBCAPTION_OK != cea708_parse (sei_message_data (msg), sei_message_size (msg), &cea708)) {
                 fprintf (stderr,"cea708_parse error\n");
-            } else {
+            }
+            else {
                 cea708_dump (&cea708);
             }
         }
@@ -457,29 +467,35 @@ libcaption_stauts_t sei_from_caption_frame (sei_t* sei, caption_frame_t* frame)
 
             if (!cc_data) {
                 // We do't want to write bad data, so just ignore it.
-            } else if (eia608_is_basicna (prev_cc_data)) {
+            }
+            else if (eia608_is_basicna (prev_cc_data)) {
                 if (eia608_is_basicna (cc_data)) {
                     // previous and current chars are both basicna, combine them into current
                     sei_encode_eia608 (sei, &cea708, eia608_from_basicna (prev_cc_data,cc_data));
-                } else if (eia608_is_westeu (cc_data)) {
+                }
+                else if (eia608_is_westeu (cc_data)) {
                     // extended charcters overwrite the previous charcter, so insert a dummy char thren write the extended char
                     sei_encode_eia608 (sei, &cea708, eia608_from_basicna (prev_cc_data,eia608_from_utf8_1 (EIA608_CHAR_SPACE,DEFAULT_CHANNEL)));
                     sei_encode_eia608 (sei, &cea708, cc_data);
-                } else {
+                }
+                else {
                     // previous was basic na, but current isnt; write previous and current
                     sei_encode_eia608 (sei, &cea708, prev_cc_data);
                     sei_encode_eia608 (sei, &cea708, cc_data);
                 }
 
                 prev_cc_data = 0; // previous is handled, we can forget it now
-            } else if (eia608_is_westeu (cc_data)) {
+            }
+            else if (eia608_is_westeu (cc_data)) {
                 // extended chars overwrite the previous chars, so insert a dummy char
                 // TODO create a map of alternamt chars for eia608_is_westeu instead of using space
                 sei_encode_eia608 (sei, &cea708, eia608_from_utf8_1 (EIA608_CHAR_SPACE,DEFAULT_CHANNEL));
                 sei_encode_eia608 (sei, &cea708, cc_data);
-            } else if (eia608_is_basicna (cc_data)) {
+            }
+            else if (eia608_is_basicna (cc_data)) {
                 prev_cc_data = cc_data;
-            } else {
+            }
+            else {
                 sei_encode_eia608 (sei, &cea708, cc_data);
             }
 
@@ -536,7 +552,7 @@ libcaption_stauts_t sei_from_caption_clear (sei_t* sei)
     return LIBCAPTION_OK;
 }
 ////////////////////////////////////////////////////////////////////////////////
-static int avc_is_start_code (const uint8_t* data, int size, int* len)
+static int _is_start_code (const uint8_t* data, int size, int* len)
 {
     if (3 > size) {
         return -1;
@@ -566,31 +582,32 @@ static int avc_is_start_code (const uint8_t* data, int size, int* len)
 }
 
 
-static int avc_find_start_code (const uint8_t* data, int size, int* len)
+static int _find_start_code (const uint8_t* data, int size, int* len)
 {
     int pos = 0;
 
     for (;;) {
         // is pos pointing to a start code?
-        int isc = avc_is_start_code (data + pos, size - pos, len);
+        int isc = _is_start_code (data + pos, size - pos, len);
 
         if (0 < isc) {
             pos += isc;
-        } else if (0 > isc) {
+        }
+        else if (0 > isc) {
             // No start code found
             return isc;
-        } else {
+        }
+        else {
             // Start code found at pos
             return pos;
         }
     }
 }
 
-
-static int avc_find_start_code_increnental (const uint8_t* data, int size, int prev_size, int* len)
+static int _find_start_code_increnental (const uint8_t* data, int size, int prev_size, int* len)
 {
     int offset = (3 <= prev_size) ? (prev_size - 3) : 0;
-    int pos = avc_find_start_code (data + offset, size - offset, len);
+    int pos = _find_start_code (data + offset, size - offset, len);
 
     if (0 <= pos) {
         return pos + offset;
@@ -599,12 +616,12 @@ static int avc_find_start_code_increnental (const uint8_t* data, int size, int p
     return pos;
 }
 
-void avcnalu_init (avcnalu_t* nalu)
+void h26x_init (h26x_t* nalu)
 {
-    memset (nalu,0,sizeof (avcnalu_t));
+    memset (nalu,0,sizeof (h26x_t));
 }
 
-int avcnalu_parse_annexb (avcnalu_t* nalu, const uint8_t** data, size_t* size)
+int h26x_parse (h26x_t* nalu, const uint8_t** data, size_t* size)
 {
     int scpos, sclen;
     int new_size = (int) (nalu->size + (*size));
@@ -615,14 +632,15 @@ int avcnalu_parse_annexb (avcnalu_t* nalu, const uint8_t** data, size_t* size)
     }
 
     memcpy (&nalu->data[nalu->size], (*data), (*size));
-    scpos = avc_find_start_code_increnental (&nalu->data[0], new_size, (int) nalu->size, &sclen);
+    scpos = _find_start_code_increnental (&nalu->data[0], new_size, (int) nalu->size, &sclen);
 
     if (0<=scpos) {
         (*data) += (scpos - nalu->size) + sclen;
         (*size) -= (scpos - nalu->size) + sclen;
         nalu->size = scpos;
         return 0 < nalu->size ? LIBCAPTION_READY : LIBCAPTION_OK;
-    } else {
+    }
+    else {
         (*size) = 0;
         nalu->size = new_size;
         return LIBCAPTION_OK;

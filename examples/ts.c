@@ -29,7 +29,7 @@ void ts_init (ts_t* ts)
     memset (ts,0,sizeof (ts_t));
 }
 
-static int64_t ts_parse_pts (const uint8_t* data)
+static int64_t ts_parse_timestamp (const uint8_t* data)
 {
     // 0000 1110  1111 1111  1111 1110  1111 1111  1111 1110
     uint64_t pts = 0;
@@ -65,7 +65,8 @@ int ts_parse_packet (ts_t* ts, const uint8_t* data)
         }
 
         ts->pmtpid = ( (data[i + 10] & 0x1F) << 8) | data[i + 11];
-    } else if (pid == ts->pmtpid) {
+    }
+    else if (pid == ts->pmtpid) {
         // PMT
         if (payload_present) {
             // Skip the payload.
@@ -85,15 +86,17 @@ int ts_parse_packet (ts_t* ts, const uint8_t* data)
                 int16_t elementary_pid = ( (data[i + 1] & 0x1F) << 8) | data[i + 2];
                 int16_t esinfo_length  = ( (data[i + 3] & 0x0F) << 8) | data[i + 4];
 
-                if (0x1B == stream_type) {
-                    ts->avcpid = elementary_pid;
+                if (STREAM_TYPE_H264 == stream_type || STREAM_TYPE_H262 == stream_type) {
+                    ts->type = stream_type;
+                    ts->videopid = elementary_pid;
                 }
 
                 i += 5 + esinfo_length;
                 descriptor_loop_length -= 5 + esinfo_length;
             }
         }
-    } else if (payload_present && pid == ts->avcpid) {
+    }
+    else if (payload_present && pid == ts->videopid) {
         if (pusi) {
             // int data_alignment = !! (data[i + 6] & 0x04);
             int has_pts = !! (data[i + 7] & 0x80);
@@ -101,8 +104,8 @@ int ts_parse_packet (ts_t* ts, const uint8_t* data)
             uint8_t header_length = data[i + 8];
 
             if (has_pts) {
-                ts->pts = ts_parse_pts (&data[i + 9]);
-                ts->dts = has_dts ? ts_parse_pts (&data[i + 14]) : ts->pts;
+                ts->pts = ts_parse_timestamp (&data[i + 9]);
+                ts->dts = has_dts ? ts_parse_timestamp (&data[i + 14]) : ts->pts;
             }
 
             i += 9 + header_length;

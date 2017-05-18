@@ -53,8 +53,23 @@ int cea708_init (cea708_t* cea708)
     return 1;
 }
 
-// 00 00 00  06 C1  FF FC 34 B9 FF : onCaptionInfo.
-int cea708_parse (uint8_t* data, size_t size, cea708_t* cea708)
+int cea708_parse_h262 (uint8_t* data, size_t size, cea708_t* cea708)
+{
+    int i;
+
+    if (5>size) {
+        return LIBCAPTION_ERROR;
+    }
+
+    cea708->country = country_united_states;
+    cea708->provider = t35_provider_atsc;
+    cea708->user_identifier = ( (data[0]<<24) | (data[1]<<16) | (data[2]<<8) |data[3]);
+    cea708->user_data_type_code = data[4];
+
+    return LIBCAPTION_OK;
+}
+
+int cea708_parse_h264 (uint8_t* data, size_t size, cea708_t* cea708)
 {
     int i;
 
@@ -79,7 +94,8 @@ int cea708_parse (uint8_t* data, size_t size, cea708_t* cea708)
         if (1>size) { goto error; }
 
         data += 1; size -= 1;
-    } else if (t35_provider_atsc == cea708->provider || t35_provider_direct_tv == cea708->provider) {
+    }
+    else if (t35_provider_atsc == cea708->provider || t35_provider_direct_tv == cea708->provider) {
         if (1>size) { goto error; }
 
         cea708->user_data_type_code = data[0];
@@ -114,11 +130,14 @@ int cea708_parse (uint8_t* data, size_t size, cea708_t* cea708)
             cea708->user_data.cc_data[i].cc_data     = data[1]<<8|data[2];
             data += 3; size -= 3;
         }
-    } else if (4 == cea708->user_data_type_code) {
+    }
+    else if (4 == cea708->user_data_type_code) {
         // additional_CEA_608_data
-    } else if (5 == cea708->user_data_type_code) {
+    }
+    else if (5 == cea708->user_data_type_code) {
         // luma_PAM_data
-    } else {
+    }
+    else {
         // ATSC_reserved_user_data
     }
 

@@ -21,6 +21,7 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN                  */
 /* THE SOFTWARE.                                                                              */
 /**********************************************************************************************/
+// TODO renamed this h26x because we are adding suport for h.262 as well as AVC
 #ifndef LIBCAPTION_AVC_H
 #define LIBCAPTION_AVC_H
 #ifdef __cplusplus
@@ -33,16 +34,22 @@ extern "C" {
 #include <float.h>
 ////////////////////////////////////////////////////////////////////////////////
 #define MAX_NALU_SIZE (4*1024*1024)
+#define H264_NALU_TYPE_SEI 6
+#define H262_NALU_TYPE_USER_DATA 0xB2
+
+// TODO rename this to be less avc spacific
 typedef struct {
     size_t size;
     uint8_t data[MAX_NALU_SIZE];
-} avcnalu_t;
+} h26x_t;
 
-void avcnalu_init (avcnalu_t* nalu);
-int avcnalu_parse_annexb (avcnalu_t* nalu, const uint8_t** data, size_t* size);
-static inline uint8_t  avcnalu_type (avcnalu_t* nalu) { return nalu->data[0] & 0x1F; }
-static inline uint8_t* avcnalu_data (avcnalu_t* nalu) { return &nalu->data[0]; }
-static inline size_t   avcnalu_size (avcnalu_t* nalu) { return nalu->size; }
+void h26x_init (h26x_t* nalu);
+int h26x_parse (h26x_t* nalu, const uint8_t** data, size_t* size);
+static inline uint8_t  h262_type (h26x_t* nalu) { return nalu->data[0]; }
+static inline uint8_t  h264_type (h26x_t* nalu) { return nalu->data[0] & 0x1F; }
+static inline uint8_t* h26x_data (h26x_t* nalu) { return &nalu->data[0]; }
+static inline size_t   h26x_size (h26x_t* nalu) { return nalu->size; }
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct _sei_message_t sei_message_t;
 
@@ -101,7 +108,7 @@ int sei_parse_nalu (sei_t* sei, const uint8_t* data, size_t size, double dts, do
     \param
 */
 // TODO add dts,cts to nalu
-static inline int sei_parse_avcnalu (sei_t* sei, avcnalu_t* nalu, double dts, double cts) { return sei_parse_nalu (sei,avcnalu_data (nalu),avcnalu_size (nalu),dts,cts); }
+static inline int sei_parse_avcnalu (sei_t* sei, h26x_t* nalu, double dts, double cts) { return sei_parse_nalu (sei,h26x_data (nalu),h26x_size (nalu),dts,cts); }
 /*! \brief
     \param
 */
@@ -157,7 +164,8 @@ static inline int sei_decode_cea708 (sei_message_t* msg, cea708_t* cea708)
 {
     if (sei_type_user_data_registered_itu_t_t35 == sei_message_type (msg)) {
         return cea708_parse (sei_message_data (msg), sei_message_size (msg), cea708);
-    } else {
+    }
+    else {
         return 0;
     }
 }
