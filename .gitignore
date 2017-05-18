@@ -42,6 +42,7 @@ scc2srt
 srt2vtt
 flv2srt
 ts2srt
+ts2scc
 flv+srt
 flv+scc
 srtdump

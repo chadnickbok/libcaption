@@ -21,28 +21,28 @@
 /* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN                  */
 /* THE SOFTWARE.                                                                              */
 /**********************************************************************************************/
-#include "ts.h"
-#include "srt.h"
 #include "avc.h"
+#include "srt.h"
+#include "ts.h"
 #include <stdio.h>
 
-int main (int argc, char** argv)
+int main(int argc, char** argv)
 {
     const char* path = argv[1];
 
     ts_t ts;
     sei_t sei;
     h26x_t h26x;
-    srt_t* srt = 0, *head = 0;
+    srt_t *srt = 0, *head = 0;
     caption_frame_t frame;
     uint8_t pkt[TS_PACKET_SIZE];
-    ts_init (&ts);
-    caption_frame_init (&frame);
+    ts_init(&ts);
+    caption_frame_init(&frame);
 
-    FILE* file = fopen (path,"rb+");
+    FILE* file = fopen(path, "rb+");
 
-    while (TS_PACKET_SIZE == fread (&pkt[0],1,TS_PACKET_SIZE, file)) {
-        switch (ts_parse_packet (&ts,&pkt[0])) {
+    while (TS_PACKET_SIZE == fread(&pkt[0], 1, TS_PACKET_SIZE, file)) {
+        switch (ts_parse_packet(&ts, &pkt[0])) {
         case LIBCAPTION_OK:
             // fprintf (stderr,"read ts packet\n");
             break;
@@ -52,33 +52,33 @@ int main (int argc, char** argv)
             while (ts.size) {
                 // fprintf (stderr,"ts.size %d (%02X%02X%02X%02X)\n",ts.size, ts.data[0], ts.data[1], ts.data[2], ts.data[3]);
 
-                switch (h26x_parse (&h26x, &ts.data, &ts.size)) {
+                switch (h26x_parse(&h26x, &ts.data, &ts.size)) {
                 case LIBCAPTION_OK:
                     break;
 
                 case LIBCAPTION_ERROR:
-                    h26x_init (&h26x);
+                    h26x_init(&h26x);
                     break;
 
                 case LIBCAPTION_READY: {
 
-                    if (STREAM_TYPE_H264 == ts.type && H264_NALU_TYPE_SEI == h264_type (&h26x)) {
-                        sei_init (&sei);
-                        sei_parse_avcnalu (&sei, &h26x, ts_dts_seconds (&ts), ts_cts_seconds (&ts));
+                    if (STREAM_TYPE_H264 == ts.type && H264_NALU_TYPE_SEI == h264_type(&h26x)) {
+                        sei_init(&sei);
+                        sei_parse_avcnalu(&sei, &h26x, ts_dts_seconds(&ts), ts_cts_seconds(&ts));
 
                         // sei_dump (&sei);
 
-                        if (LIBCAPTION_READY == sei_to_caption_frame (&sei,&frame)) {
+                        if (LIBCAPTION_READY == sei_to_caption_frame(&sei, &frame)) {
                             // caption_frame_dump (&frame);
-                            srt = srt_from_caption_frame (&frame,srt,&head);
+                            srt = srt_from_caption_frame(&frame, srt, &head);
 
                             // srt_dump (srt);
                         }
 
-                        sei_free (&sei);
+                        sei_free(&sei);
                     }
 
-                    h26x_init (&h26x);
+                    h26x_init(&h26x);
                 } break;
                 }
             }
@@ -88,11 +88,10 @@ int main (int argc, char** argv)
             // fprintf (stderr,"read ts packet ERROR\n");
             break;
         }
-
     }
 
-    srt_dump (head);
-    srt_free (head);
+    srt_dump(head);
+    srt_free(head);
 
     return 1;
 }

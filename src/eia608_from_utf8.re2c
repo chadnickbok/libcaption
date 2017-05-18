@@ -25,12 +25,14 @@
 #include <ctype.h>
 #include <stdint.h>
 
-uint16_t _eia608_from_utf8 (const utf8_char_t* s)
+uint16_t _eia608_from_utf8(const utf8_char_t* s)
 {
     const unsigned char* YYMARKER; // needed by default rule
-    const unsigned char* YYCURSOR = (const unsigned char*) s;
+    const unsigned char* YYCURSOR = (const unsigned char*)s;
 
-    if (0==s) { return 0x0000;}
+    if (0 == s) {
+        return 0x0000;
+    }
 
     /*!re2c
     re2c:yyfill:enable = 0;
@@ -54,7 +56,7 @@ uint16_t _eia608_from_utf8 (const utf8_char_t* s)
     "\x7F" { /*DEL/BACKSPACE. Need to set bits 9 and 12! return 0x1421;*/ return 0x0000; }
 
     /* Rules are processed top to bottom. So All single byte chars MUST be above this line!*/
-    [\x20-\x7F] { /*ASCII range*/ return (s[0]<<8) &0xFF00; } /* Should we use yych instead of s[0]?*/
+    [\x20 -\x7F] { /*ASCII range*/ return (s[0] << 8) & 0xFF00; } /* Should we use yych instead of s[0]?*/
 
     /*This is the second half of the ascii exceptions*/
     "\xC3\xA1" { /*LATIN_SMALL_LETTER_A_WITH_ACUTE*/ return 0x2A00; }

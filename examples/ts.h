@@ -30,7 +30,7 @@ typedef struct {
     int64_t pts;
     int64_t dts;
     uint8_t type;
-    size_t  size;
+    size_t size;
     const uint8_t* data;
 } ts_t;
 
@@ -43,11 +43,11 @@ typedef struct {
 #define STREAM_TYPE_H264 0x1B
 #define STREAM_TYPE_H262 0x00 // TODO!
 
-void ts_init (ts_t* ts);
-int ts_parse_packet (ts_t* ts, const uint8_t* data);
+void ts_init(ts_t* ts);
+int ts_parse_packet(ts_t* ts, const uint8_t* data);
 // return timestamp in seconds
-static inline double ts_dts_seconds (ts_t* ts) { return ts->dts / 90000.0; }
-static inline double ts_pts_seconds (ts_t* ts) { return ts->pts / 90000.0; }
-static inline double ts_cts_seconds (ts_t* ts) { return (ts->dts - ts->pts) / 90000.0; }
+static inline double ts_dts_seconds(ts_t* ts) { return ts->dts / 90000.0; }
+static inline double ts_pts_seconds(ts_t* ts) { return ts->pts / 90000.0; }
+static inline double ts_cts_seconds(ts_t* ts) { return (ts->dts - ts->pts) / 90000.0; }
 
 #endif

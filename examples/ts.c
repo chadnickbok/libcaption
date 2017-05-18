@@ -24,30 +24,30 @@
 #include "ts.h"
 #include <string.h>
 
-void ts_init (ts_t* ts)
+void ts_init(ts_t* ts)
 {
-    memset (ts,0,sizeof (ts_t));
+    memset(ts, 0, sizeof(ts_t));
 }
 
-static int64_t ts_parse_timestamp (const uint8_t* data)
+static int64_t ts_parse_timestamp(const uint8_t* data)
 {
     // 0000 1110  1111 1111  1111 1110  1111 1111  1111 1110
     uint64_t pts = 0;
-    pts |= (uint64_t) (data[0] & 0x0E) << 29;
-    pts |= (uint64_t) (data[1] & 0xFF) << 22;
-    pts |= (uint64_t) (data[2] & 0xFE) << 14;
-    pts |= (uint64_t) (data[3] & 0xFF) <<  7;
-    pts |= (uint64_t) (data[4] & 0xFE) >>  1;
+    pts |= (uint64_t)(data[0] & 0x0E) << 29;
+    pts |= (uint64_t)(data[1] & 0xFF) << 22;
+    pts |= (uint64_t)(data[2] & 0xFE) << 14;
+    pts |= (uint64_t)(data[3] & 0xFF) << 7;
+    pts |= (uint64_t)(data[4] & 0xFE) >> 1;
     return pts;
 }
 
-int ts_parse_packet (ts_t* ts, const uint8_t* data)
+int ts_parse_packet(ts_t* ts, const uint8_t* data)
 {
     size_t i = 0;
-    int pusi = !! (data[i + 1] & 0x40);  // Payload Unit Start Indicator
-    int16_t pid = ( (data[i + 1] & 0x1F) << 8) | data[i + 2];    // PID
-    int adaption_present = !! (data[i + 3] & 0x20);  // Adaptation field exist
-    int payload_present = !! (data[i + 3] & 0x10);  // Contains payload
+    int pusi = !!(data[i + 1] & 0x40); // Payload Unit Start Indicator
+    int16_t pid = ((data[i + 1] & 0x1F) << 8) | data[i + 2]; // PID
+    int adaption_present = !!(data[i + 3] & 0x20); // Adaptation field exist
+    int payload_present = !!(data[i + 3] & 0x10); // Contains payload
     i += 4;
 
     ts->data = 0;
@@ -64,27 +64,26 @@ int ts_parse_packet (ts_t* ts, const uint8_t* data)
             i += data[i] + 1;
         }
 
-        ts->pmtpid = ( (data[i + 10] & 0x1F) << 8) | data[i + 11];
-    }
-    else if (pid == ts->pmtpid) {
+        ts->pmtpid = ((data[i + 10] & 0x1F) << 8) | data[i + 11];
+    } else if (pid == ts->pmtpid) {
         // PMT
         if (payload_present) {
             // Skip the payload.
             i += data[i] + 1;
         }
 
-        uint16_t section_length = ( (data[i + 1] & 0x0F) << 8) | data[i + 2];
+        uint16_t section_length = ((data[i + 1] & 0x0F) << 8) | data[i + 2];
         int current = data[i + 5] & 0x01;
-        int16_t program_info_length = ( (data[i + 10] & 0x0F) << 8) | data[i + 11];
-        int16_t descriptor_loop_length = section_length - (9 + program_info_length + 4);   // 4 for the crc
+        int16_t program_info_length = ((data[i + 10] & 0x0F) << 8) | data[i + 11];
+        int16_t descriptor_loop_length = section_length - (9 + program_info_length + 4); // 4 for the crc
 
         i += 12 + program_info_length;
 
         if (current) {
             while (descriptor_loop_length >= 5) {
-                uint8_t stream_type    = data[i];
-                int16_t elementary_pid = ( (data[i + 1] & 0x1F) << 8) | data[i + 2];
-                int16_t esinfo_length  = ( (data[i + 3] & 0x0F) << 8) | data[i + 4];
+                uint8_t stream_type = data[i];
+                int16_t elementary_pid = ((data[i + 1] & 0x1F) << 8) | data[i + 2];
+                int16_t esinfo_length = ((data[i + 3] & 0x0F) << 8) | data[i + 4];
 
                 if (STREAM_TYPE_H264 == stream_type || STREAM_TYPE_H262 == stream_type) {
                     ts->type = stream_type;
@@ -95,24 +94,23 @@ int ts_parse_packet (ts_t* ts, const uint8_t* data)
                 descriptor_loop_length -= 5 + esinfo_length;
             }
         }
-    }
-    else if (payload_present && pid == ts->videopid) {
+    } else if (payload_present && pid == ts->videopid) {
         if (pusi) {
             // int data_alignment = !! (data[i + 6] & 0x04);
-            int has_pts = !! (data[i + 7] & 0x80);
-            int has_dts = !! (data[i + 7] & 0x40);
+            int has_pts = !!(data[i + 7] & 0x80);
+            int has_dts = !!(data[i + 7] & 0x40);
             uint8_t header_length = data[i + 8];
 
             if (has_pts) {
-                ts->pts = ts_parse_timestamp (&data[i + 9]);
-                ts->dts = has_dts ? ts_parse_timestamp (&data[i + 14]) : ts->pts;
+                ts->pts = ts_parse_timestamp(&data[i + 9]);
+                ts->dts = has_dts ? ts_parse_timestamp(&data[i + 14]) : ts->pts;
             }
 
             i += 9 + header_length;
         }
 
         ts->data = &data[i];
-        ts->size = TS_PACKET_SIZE-i;
+        ts->size = TS_PACKET_SIZE - i;
         return LIBCAPTION_READY;
     }
 
