@@ -2,6 +2,10 @@ add_executable(flv2srt flv2srt.c flv.c)
 target_link_libraries(flv2srt caption)
 install(TARGETS flv2srt DESTINATION bin)
 
+add_executable(flv2scc flv2scc.c flv.c)
+target_link_libraries(flv2scc caption)
+install(TARGETS flv2scc DESTINATION bin)
+
 add_executable(ts2srt ts2srt.c ts.c)
 target_link_libraries(ts2srt caption)
 install(TARGETS ts2srt DESTINATION bin)

@@ -22,7 +22,6 @@
 /* THE SOFTWARE.                                                                              */
 /**********************************************************************************************/
 #include "avc.h"
-#include "srt.h"
 #include "ts.h"
 #include <math.h>
 #include <stdio.h>
@@ -97,13 +96,14 @@ int main(int argc, char** argv)
                                 cea708_cc_type_t type;
                                 uint16_t cc = cea708_cc_data(&cea708.user_data, ccidx, &valid, &type);
 
-                                if (valid && DEFAULT_TYPE == type)
+                                if (valid && DEFAULT_TYPE == type) {
                                     if (0 == cc_count) {
                                         fprintf(stderr, "%02d:%02d:%02d:%02d", hh, mm, ss, (int)lround(FRAMES_PER_MS * ms));
                                     }
 
-                                ++cc_count;
-                                fprintf(stderr, " %02X%02X", (uint8_t)(cc >> 8), (uint8_t)(cc));
+                                    ++cc_count;
+                                    fprintf(stderr, " %02X%02X", (uint8_t)(cc >> 8), (uint8_t)(cc));
+                                }
                             }
                         }
                     }
@@ -116,13 +116,14 @@ int main(int argc, char** argv)
                             cea708_cc_type_t type;
                             uint16_t cc = cea708_cc_data(&cea708.user_data, ccidx, &valid, &type);
 
-                            if (valid && DEFAULT_TYPE == type)
+                            if (valid && DEFAULT_TYPE == type) {
                                 if (0 == cc_count) {
                                     fprintf(stderr, "%02d:%02d:%02d:%02d", hh, mm, ss, (int)lround(FRAMES_PER_MS * ms));
                                 }
 
-                            ++cc_count;
-                            fprintf(stderr, " %02X%02X", (uint8_t)(cc >> 8), (uint8_t)(cc));
+                                ++cc_count;
+                                fprintf(stderr, " %02X%02X", (uint8_t)(cc >> 8), (uint8_t)(cc));
+                            }
                         }
                     }
 

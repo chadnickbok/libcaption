@@ -41,6 +41,7 @@ cmake_install.cmake
 scc2srt
 srt2vtt
 flv2srt
+flv2scc
 ts2srt
 ts2scc
 flv+srt

@@ -47,6 +47,8 @@ int main(int argc, char** argv)
         fprintf(stderr, "Reading from '%s'\n", path);
     }
 
+    fprintf(stderr, "Scenarist_SCC V1.0\n\n");
+
     while (flv_read_tag(flv, &tag)) {
         if (flvtag_avcpackettype_nalu == flvtag_avcpackettype(&tag)) {
             ssize_t size = flvtag_payload_size(&tag);
@@ -59,7 +61,7 @@ int main(int argc, char** argv)
                 data += nalu_size + LENGTH_SIZE;
                 size -= nalu_size + LENGTH_SIZE;
 
-                if (6 == nalu_type) {
+                if (H264_NALU_TYPE_SEI == nalu_type) {
                     sei_init(&sei);
                     sei_parse_nalu(&sei, nalu_data, nalu_size, flvtag_dts_seconds(&tag), flvtag_cts_seconds(&tag));
                     // sei_dump (&sei);

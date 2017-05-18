@@ -37,7 +37,6 @@ extern "C" {
 #define H264_NALU_TYPE_SEI 6
 #define H262_NALU_TYPE_USER_DATA 0xB2
 
-// TODO rename this to be less avc spacific
 typedef struct {
     size_t size;
     uint8_t data[MAX_NALU_SIZE];
