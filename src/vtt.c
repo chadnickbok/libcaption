@@ -157,11 +157,8 @@ void parse_timestamps(const utf8_char_t* line, double *start_pts, double *end_pt
     *start_pts = -1;
     *cue_settings = NULL;
 
-    printf("Matches: %d\n", matches);
-
     if (matches >= 1) {
         *start_pts = parse_timestamp(start_str);
-        printf("Start pts: %f\n", *start_pts);
     }
     if (matches >= 2) {
         *end_pts = parse_timestamp(end_str);
@@ -332,7 +329,7 @@ static void _dump(vtt_t* vtt)
         vtt_crack_time(block->timestamp + block->duration, &hh2, &mm2, &ss2, &ms2);
 
         if (block->cue_id != NULL) {
-            printf("%s\n", block->cue_id);
+            printf("%s", block->cue_id);
         }
 
         printf("%d:%02d:%02d.%03d --> %02d:%02d:%02d.%03d",
@@ -343,6 +340,8 @@ static void _dump(vtt_t* vtt)
         }
         
         printf("\r\n%s\r\n", vtt_block_data(block));
+
+        block = block->next;
     }
 }
 
